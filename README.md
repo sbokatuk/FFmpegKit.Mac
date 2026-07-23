@@ -1,7 +1,7 @@
-# FFmpegKit.iOS
+# FFmpegKit.Mac
 
-[![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Video.iOS?label=nuget)](https://www.nuget.org/packages/FFmpegKit.Net.Video.iOS)
-[![release](https://github.com/sbokatuk/FFmpegKit.iOS/actions/workflows/release.yml/badge.svg)](https://github.com/sbokatuk/FFmpegKit.iOS/actions/workflows/release.yml)
+[![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Video.Mac?label=nuget)](https://www.nuget.org/packages/FFmpegKit.Net.Video.Mac)
+[![release](https://github.com/sbokatuk/FFmpegKit.Mac/actions/workflows/release.yml/badge.svg)](https://github.com/sbokatuk/FFmpegKit.Mac/actions/workflows/release.yml)
 [![Targets: net8.0 | net9.0 | net10.0](https://img.shields.io/badge/targets-net8.0%20%7C%20net9.0%20%7C%20net10.0-512BD4)](#packages)
 [![ffmpeg 8.1.2](https://img.shields.io/badge/ffmpeg-8.1.2-632CA6)](#about)
 [![Licence: MIT AND LGPL-3.0 or GPL-3.0](https://img.shields.io/badge/licence-MIT%20AND%20LGPL--3.0%20or%20GPL--3.0-orange)](#licence)
@@ -14,7 +14,7 @@ Built against the prebuilt Apple binaries from **[sk3llo/ffmpeg_kit_flutter](htt
 
 ## About
 
-This repository contains .NET bindings on top of the FFmpegKit `.xcframework` build for iOS. One project, `src/FFmpegKit.iOS`, produces all eight package variants — the variant is selected with the `FFmpegKitBuildType` MSBuild property.
+This repository contains .NET bindings on top of the FFmpegKit `.xcframework` build for iOS. One project, `src/FFmpegKit.Mac`, produces all eight package variants — the variant is selected with the `FFmpegKitBuildType` MSBuild property.
 
 Packages target `net8.0-ios18.0`, `net9.0-ios18.0` and `net10.0-ios26.0`.
 
@@ -87,14 +87,14 @@ The C# binding code in this repository is [MIT](LICENSE). **The published NuGet 
 
 | Package | Native license | SPDX expression |
 | --- | --- | --- |
-| `FFmpegKit.Net.Audio.iOS` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
-| `FFmpegKit.Net.Full.iOS` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
-| `FFmpegKit.Net.Https.iOS` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
-| `FFmpegKit.Net.Min.iOS` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
-| `FFmpegKit.Net.Video.iOS` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
-| `FFmpegKit.Net.FullGpl.iOS` | **GPL-3.0** | `MIT AND GPL-3.0-only` |
-| `FFmpegKit.Net.HttpsGpl.iOS` | **GPL-3.0** | `MIT AND GPL-3.0-only` |
-| `FFmpegKit.Net.MinGpl.iOS` | **GPL-3.0** | `MIT AND GPL-3.0-only` |
+| `FFmpegKit.Net.Audio.Mac` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
+| `FFmpegKit.Net.Full.Mac` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
+| `FFmpegKit.Net.Https.Mac` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
+| `FFmpegKit.Net.Min.Mac` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
+| `FFmpegKit.Net.Video.Mac` | LGPL-3.0 | `MIT AND LGPL-3.0-only` |
+| `FFmpegKit.Net.FullGpl.Mac` | **GPL-3.0** | `MIT AND GPL-3.0-only` |
+| `FFmpegKit.Net.HttpsGpl.Mac` | **GPL-3.0** | `MIT AND GPL-3.0-only` |
+| `FFmpegKit.Net.MinGpl.Mac` | **GPL-3.0** | `MIT AND GPL-3.0-only` |
 
 The `-gpl` variants enable `x264`, `x265`, `xvid` and `vidstab`, which are GPL — upstream keeps them as separate artifacts specifically so they never contaminate the LGPL ones. Upstream's guidance is direct: **if your app is closed-source, use a non-GPL variant.**
 
@@ -110,29 +110,29 @@ Install the package via NuGet. There are various packages depending on what you 
 
 | Package | Link |
 |------------|-----|
-| FFmpegKit.Net.Audio.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Audio.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Audio.iOS) |
-| FFmpegKit.Net.Full.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Full.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Full.iOS) |
-| FFmpegKit.Net.FullGpl.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.FullGpl.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.FullGpl.iOS) |
-| FFmpegKit.Net.Https.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Https.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Https.iOS) |
-| FFmpegKit.Net.HttpsGpl.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.HttpsGpl.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.HttpsGpl.iOS) |
-| FFmpegKit.Net.Min.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Min.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Min.iOS) |
-| FFmpegKit.Net.MinGpl.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.MinGpl.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.MinGpl.iOS) |
-| FFmpegKit.Net.Video.iOS | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Video.iOS.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Video.iOS) |
+| FFmpegKit.Net.Audio.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Audio.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Audio.Mac) |
+| FFmpegKit.Net.Full.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Full.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Full.Mac) |
+| FFmpegKit.Net.FullGpl.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.FullGpl.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.FullGpl.Mac) |
+| FFmpegKit.Net.Https.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Https.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Https.Mac) |
+| FFmpegKit.Net.HttpsGpl.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.HttpsGpl.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.HttpsGpl.Mac) |
+| FFmpegKit.Net.Min.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Min.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Min.Mac) |
+| FFmpegKit.Net.MinGpl.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.MinGpl.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.MinGpl.Mac) |
+| FFmpegKit.Net.Video.Mac | [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Video.Mac.svg?label=NuGet)](https://www.nuget.org/packages/FFmpegKit.Net.Video.Mac) |
 
 A package version is its FFmpeg version plus a binding revision — see [Versioning](#versioning). `8.1.2.*` floats to the newest bindings for FFmpeg `8.1.2` without ever crossing onto another FFmpeg build.
 
-### Migrating from `FFmpegKit.FullGpl.iOS` / `FFmpegKit.Video.iOS`
+### Migrating from `FFmpegKit.FullGpl.Mac` / `FFmpegKit.Video.Mac`
 
-These packages replace the older `FFmpegKit.<Variant>.iOS` ones. Change the package id:
+These packages replace the older `FFmpegKit.<Variant>.Mac` ones. Change the package id:
 
 ```diff
--<PackageReference Include="FFmpegKit.FullGpl.iOS" Version="4.5.1-beta2" />
-+<PackageReference Include="FFmpegKit.Net.FullGpl.iOS" Version="8.1.2" />
+-<PackageReference Include="FFmpegKit.FullGpl.Mac" Version="4.5.1-beta2" />
++<PackageReference Include="FFmpegKit.Net.FullGpl.Mac" Version="8.1.2" />
 ```
 
-**The `Ffmpegkit.Ios` namespace is unchanged**, so your `using` directives and calls stay as they are. It deliberately does not follow the package name: a namespace rooted at `FFmpegKit` containing a type also called `FFmpegKit` makes `FFmpegKit.Execute(...)` resolve the namespace instead of the class and fail to compile.
+**The `Ffmpegkit.Mac` namespace is unchanged**, so your `using` directives and calls stay as they are. It deliberately does not follow the package name: a namespace rooted at `FFmpegKit` containing a type also called `FFmpegKit` makes `FFmpegKit.Execute(...)` resolve the namespace instead of the class and fail to compile.
 
-The assembly is now `FFmpegKit.Net.<Variant>.iOS`, which matters only if you reference it by assembly name or use reflection.
+The assembly is now `FFmpegKit.Net.<Variant>.Mac`, which matters only if you reference it by assembly name or use reflection.
 
 Two things to be aware of when upgrading:
 
@@ -141,10 +141,10 @@ Two things to be aware of when upgrading:
 
 ## Usage
 
-Include the `Ffmpegkit.Ios` namespace:
+Include the `Ffmpegkit.Mac` namespace:
 
 ```c#
-using Ffmpegkit.Ios;
+using Ffmpegkit.Mac;
 ```
 
 Execute your FFmpeg command:
@@ -201,7 +201,7 @@ Python 3 is also needed, for the xcframework slice stripping and the package mer
 
 ```sh
 # net8 + net9 assets (.NET 9 SDK, per global.json)
-dotnet pack src/FFmpegKit.iOS/FFmpegKit.iOS.csproj \
+dotnet pack src/FFmpegKit.Mac/FFmpegKit.Mac.csproj \
     -c Release -p:FFmpegKitBuildType=Video -p:FFmpegKitSdkBand=net9 -o artifacts
 ```
 
@@ -214,7 +214,7 @@ Only needed when bumping to a newer native FFmpegKit version. The binding is gen
 ```sh
 # Stage the public headers from the device slice
 mkdir -p Headers
-cp -R src/FFmpegKit.iOS/libs/Video/ffmpegkit.xcframework/ios-arm64_arm64e/ffmpegkit.framework/Headers/* Headers/
+cp -R src/FFmpegKit.Mac/libs/Video/ffmpegkit.xcframework/ios-arm64_arm64e/ffmpegkit.framework/Headers/* Headers/
 
 # Sharpie must be pointed at an umbrella header. FFmpegKit.h alone only pulls in a fraction of
 # the API - binding just that is how the previous binding ended up missing FFmpegKitConfig,
@@ -225,7 +225,7 @@ ls Headers/*.h | grep -v fftools | grep -v ffmpegkit_exception \
 sharpie bind -output Binding -sdk iphoneos26.5 -scope Headers Headers/FFmpegKitUmbrella.h -c -I Headers
 ```
 
-Then reconcile `Binding/ApiDefinitions.cs` and `Binding/StructsAndEnums.cs` into `src/FFmpegKit.iOS/ApiDefinition.cs` and `src/FFmpegKit.iOS/Structs.cs`. Every `[Verify]` attribute sharpie emits must be reviewed and removed — they intentionally cause build failures. Note that sharpie emits the `Level` enum as `ulong` despite its negative members; it has to be `long`.
+Then reconcile `Binding/ApiDefinitions.cs` and `Binding/StructsAndEnums.cs` into `src/FFmpegKit.Mac/ApiDefinition.cs` and `src/FFmpegKit.Mac/Structs.cs`. Every `[Verify]` attribute sharpie emits must be reviewed and removed — they intentionally cause build failures. Note that sharpie emits the `Level` enum as `ulong` despite its negative members; it has to be `long`.
 
 ## Tests
 
@@ -233,8 +233,8 @@ Then reconcile `Binding/ApiDefinitions.cs` and `Binding/StructsAndEnums.cs` into
 
 ```sh
 ./build/BuildNugets.sh                       # produce ./artifacts first
-dotnet test tests/FFmpegKit.iOS.PackageTests
-FFMPEGKIT_VARIANTS=Video dotnet test tests/FFmpegKit.iOS.PackageTests   # ...or just one variant
+dotnet test tests/FFmpegKit.Mac.PackageTests
+FFMPEGKIT_VARIANTS=Video dotnet test tests/FFmpegKit.Mac.PackageTests   # ...or just one variant
 ```
 
 **Simulator smoke tests** build an app against the packed package and run real FFmpeg commands on a booted simulator, which is the only way to prove the native frameworks actually link and load:
@@ -262,7 +262,7 @@ Setup on nuget.org (**Account → Trusted Publishing**): a policy binds to exact
 | --- | --- |
 | Package Owner | `s.bokatuk` |
 | Repository Owner | `sbokatuk` |
-| Repository | `FFmpegKit.iOS` — the name only, not a URL |
+| Repository | `FFmpegKit.Mac` — the name only, not a URL |
 | Workflow File | `pr.yml` for one policy, `release.yml` for the other |
 | Environment | `nuget.org` — must match `environment:` on the publish job |
 

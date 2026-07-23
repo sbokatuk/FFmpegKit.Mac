@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Which of the package's target frameworks to exercise. Overriding TargetFramework directly
+      on the command line breaks restore, so it goes through a property of our own.
+    -->
+    <FFmpegKitDeviceTargetFramework Condition=" '$(FFmpegKitDeviceTargetFramework)' == '' ">net9.0-macos15.0</FFmpegKitDeviceTargetFramework>
+    <TargetFramework>$(FFmpegKitDeviceTargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <CheckEolWorkloads>false</CheckEolWorkloads>
+
+    <ApplicationId>com.sbokatuk.ffmpegkit.hosttests</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>10.15</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!--
+    The e2e deliberately consumes the packed NuGet from ./artifacts rather than a ProjectReference,
+    so it exercises the artifact that actually gets published. See NuGet.config for the local feed.
+  -->
+  <PropertyGroup>
+    <FFmpegKitVariant Condition=" '$(FFmpegKitVariant)' == '' ">Video</FFmpegKitVariant>
+    <FFmpegKitPackageVersion Condition=" '$(FFmpegKitPackageVersion)' == '' ">$(VersionPrefix)</FFmpegKitPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FFmpegKit.Net.$(FFmpegKitVariant).Mac" Version="$(FFmpegKitPackageVersion)" />
+  </ItemGroup>
+
+</Project>
