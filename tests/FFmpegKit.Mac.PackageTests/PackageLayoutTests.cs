@@ -180,11 +180,19 @@ public class PackageLayoutTests
         // first place, so its presence is exactly what the package's licence expression claims.
         // Packing a GPL build under an LGPL licence expression is the one packaging mistake here
         // with legal consequences for consumers, and it is otherwise invisible.
-        var deviceSlice = SlicesOf(payload, "libavcodec").Single();
+        var macSlice = SlicesOf(payload, "libavcodec").Single();
 
-        using var libavcodec = Packages.ReadEntry(
-            payload,
-            $"libavcodec.xcframework/{deviceSlice}/libavcodec.framework/libavcodec");
+        // The macOS slice uses the versioned bundle layout: libavcodec.framework/libavcodec is a
+        // symlink - stored in the zip as a few bytes of link-target text - and the actual binary
+        // is under Versions/A/. Read the largest entry named libavcodec so the real Mach-O is
+        // scanned whichever way the zip represents the links.
+        var binaryEntry = payload.Entries
+            .Where(e => e.FullName.StartsWith($"libavcodec.xcframework/{macSlice}/", StringComparison.Ordinal))
+            .Where(e => e.FullName.EndsWith("/libavcodec", StringComparison.Ordinal))
+            .OrderByDescending(e => e.Length)
+            .First();
+
+        using var libavcodec = binaryEntry.Open();
 
         var containsX264 = ContainsAscii(libavcodec, "libx264");
 
