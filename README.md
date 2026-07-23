@@ -6,7 +6,7 @@
 [![ffmpeg 8.1.2](https://img.shields.io/badge/ffmpeg-8.1.2-632CA6)](#about)
 [![Licence: MIT AND LGPL-3.0 or GPL-3.0](https://img.shields.io/badge/licence-MIT%20AND%20LGPL--3.0%20or%20GPL--3.0-orange)](#licence)
 
-.NET for iOS and .NET MAUI bindings for the native **FFmpegKit** library.
+.NET for macOS bindings for the native **FFmpegKit** library.
 
 > GitHub reports this repository as MIT because that is what it contains: binding source only, no native binaries. **The published packages are not MIT** — they embed native FFmpeg builds and are additionally covered by LGPL-3.0, or GPL-3.0 for the `-gpl` variants. See [License](#license).
 
@@ -14,17 +14,19 @@ Built against the prebuilt Apple binaries from **[sk3llo/ffmpeg_kit_flutter](htt
 
 ## About
 
-This repository contains .NET bindings on top of the FFmpegKit `.xcframework` build for iOS. One project, `src/FFmpegKit.Mac`, produces all eight package variants — the variant is selected with the `FFmpegKitBuildType` MSBuild property.
+This repository contains .NET bindings on top of the FFmpegKit `.xcframework` build, keeping its native **macOS** slice. One project, `src/FFmpegKit.Mac`, produces all eight package variants — the variant is selected with the `FFmpegKitBuildType` MSBuild property.
 
-Packages target `net8.0-ios18.0`, `net9.0-ios18.0` and `net10.0-ios26.0`.
+Packages target `net8.0-macos14.0`, `net9.0-macos15.0` and `net10.0-macos26.0`.
 
-Each .NET SDK's iOS workload supports only two target frameworks — the .NET 9 band ships `net8` and `net9`, the .NET 10 band ships `net9` and `net10` — so no single `dotnet pack` can produce all three. [`BuildNugets.sh`](build/BuildNugets.sh) packs once per band and [`build/merge-packages.py`](build/merge-packages.py) merges the `lib/` trees and nuspec dependency groups into one package per variant.
+> **These packages supersede the `6.0.0.1-beta1` prereleases published under the same ids.** Those were **Mac Catalyst** bindings (`net*-maccatalyst` target frameworks) generated from arthenica's FFmpeg 6.0 xcframeworks. No live source publishes Catalyst slices any more — arthenica is archived with its release assets deleted — so from `8.1.2.1` on, `FFmpegKit.Net.<Variant>.Mac` means **native macOS** (`net*-macos`, AppKit apps). If you need Catalyst, the old betas remain on nuget.org, frozen at FFmpeg 6.0.
+
+Each .NET SDK's macOS workload supports only two target frameworks — the .NET 9 band ships `net8` and `net9`, the .NET 10 band ships `net9` and `net10` — so no single `dotnet pack` can produce all three. [`BuildNugets.sh`](build/BuildNugets.sh) packs once per band and [`build/merge-packages.py`](build/merge-packages.py) merges the `lib/` trees and nuspec dependency groups into one package per variant.
 
 ### Where the native binaries come from
 
-FFmpegKit has several relevant repositories, and only one of them still ships usable **iOS** binaries:
+FFmpegKit has several relevant repositories, and only one of them still ships usable **Apple** binaries:
 
-| Repository | State | Prebuilt iOS `.xcframework` |
+| Repository | State | Prebuilt `.xcframework` |
 | --- | --- | --- |
 | [`arthenica/ffmpeg-kit`](https://github.com/arthenica/ffmpeg-kit) | archived | none — every release now carries **zero assets** |
 | [`arthenica/ffmpeg-kit-next`](https://github.com/arthenica/ffmpeg-kit-next) | active, the official continuation | none — source only |
@@ -47,9 +49,9 @@ The fork currently publishes four FFmpeg lines, each with all eight variants:
 | `8.1.1` |
 | `8.1.2` |
 
-Each carries a device slice and a simulator slice. The exact architectures are upstream's to decide and have changed within a version: `8.1.2` shipped a device slice of `arm64 + arm64e` and was later rebuilt as `arm64` alone. The package tests therefore assert the *shape* — one device slice, one simulator slice, both iOS, no macOS — rather than specific names.
+Each xcframework carries an iOS device slice, an iOS simulator slice and a **universal macOS slice** (`macos-arm64_x86_64` — Apple silicon and Intel in one binary). This repository keeps only the macOS slice; the two iOS ones are stripped on download since they cannot be reached from a `net*-macos` binding and would triple the package size. The exact slice names are upstream's to decide and have changed within a version, so the package tests assert the *shape* — exactly one slice, macOS, nothing else — rather than specific names. ([`FFmpegKit.iOS`](https://github.com/sbokatuk/FFmpegKit.iOS) does the mirror image with the same downloads.)
 
-Upstream also ships a macOS slice in each xcframework. It is stripped on download: it cannot be reached from a `net*-ios` binding, but it would still be embedded in the package once per target framework. Keeping it would push the `FullGpl` package past nuget.org's 250 MB limit. If you need macOS or Mac Catalyst, note that **no Mac Catalyst slice is published at all**, so that would need a different source.
+Note that **no Mac Catalyst slice is published by any live source** — see the note under [About](#about) about the old Catalyst-based prereleases.
 
 ### Versioning
 
@@ -66,7 +68,7 @@ The first three components name the FFmpeg build the package contains, which is 
 
 A floating range such as `8.1.2.*` therefore always resolves to the newest bindings for that exact FFmpeg build and never crosses onto another one. Pin an exact version instead if you would rather approve every binding update yourself.
 
-> The [Android bindings](https://github.com/sbokatuk/FFmpegKit.Android) use the same scheme, and currently track the same FFmpeg line — `8.1.2` on both. The **binding revisions advance independently**, so the fourth component will differ between the two. They also wrap different upstream FFmpegKit builds, so the APIs are not identical.
+> The [iOS](https://github.com/sbokatuk/FFmpegKit.iOS) and [Android](https://github.com/sbokatuk/FFmpegKit.Android) bindings use the same scheme, and currently track the same FFmpeg line — `8.1.2` everywhere. The **binding revisions advance independently**, so the fourth component differs between repositories.
 
 ### Releasing an older line
 
@@ -121,23 +123,21 @@ Install the package via NuGet. There are various packages depending on what you 
 
 A package version is its FFmpeg version plus a binding revision — see [Versioning](#versioning). `8.1.2.*` floats to the newest bindings for FFmpeg `8.1.2` without ever crossing onto another FFmpeg build.
 
-### Migrating from `FFmpegKit.FullGpl.Mac` / `FFmpegKit.Video.Mac`
+### Migrating from the `6.0.0.1-beta1` prereleases
 
-These packages replace the older `FFmpegKit.<Variant>.Mac` ones. Change the package id:
+The package ids are unchanged; the platform is not. The old prereleases targeted **Mac Catalyst** (`net7.0-maccatalyst16.1` / `net8.0-maccatalyst17.2`); from `8.1.2.1` these packages target **native macOS**. A Catalyst app cannot upgrade — a native macOS (AppKit or plain `net*-macos`) app is the consumer now.
 
 ```diff
--<PackageReference Include="FFmpegKit.FullGpl.Mac" Version="4.5.1-beta2" />
-+<PackageReference Include="FFmpegKit.Net.FullGpl.Mac" Version="8.1.2" />
+-<PackageReference Include="FFmpegKit.Net.Video.Mac" Version="6.0.0.1-beta1" />
++<PackageReference Include="FFmpegKit.Net.Video.Mac" Version="8.1.2.1" />
 ```
 
-**The `Ffmpegkit.Mac` namespace is unchanged**, so your `using` directives and calls stay as they are. It deliberately does not follow the package name: a namespace rooted at `FFmpegKit` containing a type also called `FFmpegKit` makes `FFmpegKit.Execute(...)` resolve the namespace instead of the class and fail to compile.
+The namespace is `Ffmpegkit.Mac`. It deliberately does not follow the package name: a namespace rooted at `FFmpegKit` containing a type also called `FFmpegKit` makes `FFmpegKit.Execute(...)` resolve the namespace instead of the class and fail to compile.
 
-The assembly is now `FFmpegKit.Net.<Variant>.Mac`, which matters only if you reference it by assembly name or use reflection.
+Also worth knowing when upgrading:
 
-Two things to be aware of when upgrading:
-
-- The old packages declared the version as `4.5.1` but actually contained an FFmpeg **6.0** build, and declared their licence as `MIT` while shipping GPL binaries. Both are corrected here — see [License](#license). Your obligations have not changed; the metadata was simply wrong.
-- The bound API surface is much larger now. The previous binding was generated from `FFmpegKit.h` alone, which does not transitively include most of the API, so `FFmpegKitConfig`, `FFprobeKit`, `MediaInformation` and friends were missing entirely.
+- The old prereleases declared their licence as `MIT` while shipping LGPL/GPL FFmpeg binaries. Corrected here — see [License](#license). Your obligations have not changed; the metadata was simply wrong.
+- The bound API surface is much larger now: `FFmpegKitConfig`, `FFprobeKit`, `MediaInformation` and friends were missing from the old binding entirely, plus `Task`-returning execute/probe wrappers and ergonomic helpers are added.
 
 ## Usage
 
