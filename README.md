@@ -229,6 +229,26 @@ sharpie bind -output Binding -sdk macosx26.5 -scope Headers Headers/FFmpegKitUmb
 
 Then reconcile `Binding/ApiDefinitions.cs` and `Binding/StructsAndEnums.cs` into `src/FFmpegKit.Mac/ApiDefinition.cs` and `src/FFmpegKit.Mac/Structs.cs`. Every `[Verify]` attribute sharpie emits must be reviewed and removed — they intentionally cause build failures. Note that sharpie emits the `Level` enum as `ulong` despite its negative members; it has to be `long`.
 
+## Sample
+
+[`samples/FFmpegKit.Mac.Example`](samples/FFmpegKit.Mac.Example) is a native AppKit app - the
+counterpart of the MAUI samples in the iOS and Android repositories, which cannot cover this
+platform (MAUI's "Mac" is Mac Catalyst). It probes a bundled clip, runs resize / grayscale /
+audio-extract conversions with a live progress bar driven by the statistics callback, supports
+cancelling mid-run, and previews source and result side by side with `AVPlayerView`.
+
+It references the packed `FFmpegKit.Net.Full.Mac` (LGPL, deliberately not a `-gpl` variant) from
+`./artifacts` through the local feed in `NuGet.config` - build the packages first:
+
+```sh
+./build/FetchXcFrameworks.sh 8.1.2 Full
+dotnet pack src/FFmpegKit.Mac/FFmpegKit.Mac.csproj -c Release -p:FFmpegKitBuildType=Full -o artifacts
+dotnet build samples/FFmpegKit.Mac.Example/FFmpegKit.Mac.Example.csproj
+```
+
+Like the tests, it is deliberately not in `FFmpegKit.sln`, since a fresh clone has no artifacts
+to restore it against. CI compile-checks it against the freshly packed package on every build.
+
 ## Tests
 
 **Package tests** run anywhere and inspect the packed `.nupkg` files — assembly present for every target framework, all eight xcframeworks with exactly one macOS slice each, manifests consistent with the slices actually shipped, the GPL/LGPL split matching what the binaries contain, the registrar workaround `.targets` present, and nuspec metadata:
