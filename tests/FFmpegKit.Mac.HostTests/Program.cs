@@ -1,43 +1,35 @@
+using AppKit;
 using Foundation;
-using UIKit;
 
-namespace FFmpegKit.Mac.DeviceTests;
+namespace FFmpegKit.Mac.HostTests;
 
 /// <summary>
-/// Host for the on-simulator smoke tests. Runs every check on launch, reports the outcome to
-/// stdout - which `simctl launch --console-pty` streams straight back to CI - and then exits with
-/// a verdict line the runner script greps for.
+/// Host for the smoke tests. macOS is the target platform, so the checks run directly on the
+/// build machine: the runner script launches the app bundle's executable from a terminal, reads
+/// stdout and greps for the verdict line. No simulator or device is involved.
 /// </summary>
 public static class Program
 {
-    private static void Main(string[] args) => UIApplication.Main(args, null, typeof(AppDelegate));
+    private static void Main(string[] args)
+    {
+        NSApplication.Init();
+        NSApplication.SharedApplication.Delegate = new AppDelegate();
+        NSApplication.SharedApplication.Run();
+    }
 }
 
-[Register(nameof(AppDelegate))]
-public sealed class AppDelegate : UIApplicationDelegate
+public sealed class AppDelegate : NSApplicationDelegate
 {
-    public override UIWindow? Window { get; set; }
-
-    public override bool FinishedLaunching(UIApplication application, NSDictionary launchOptions)
+    public override void DidFinishLaunching(NSNotification notification)
     {
-        // A window is not strictly needed for a headless run, but iOS terminates an app that
-        // never presents one, which would look like a crash rather than a test failure.
-        var root = new UIViewController();
-        root.View!.BackgroundColor = UIColor.SystemBackground;
-
-        Window = new UIWindow(UIScreen.MainScreen.Bounds) { RootViewController = root };
-        Window.MakeKeyAndVisible();
-
-        // Off the UI thread: the checks run real FFmpeg commands and would otherwise trip the
-        // watchdog before any of them finished.
+        // Off the main thread: FFmpegKit dispatches some callbacks to the main queue, and the
+        // checks block waiting on sessions - running them on the main thread would deadlock.
         Task.Run(RunAndReport);
-
-        return true;
     }
 
     private static void RunAndReport()
     {
-        var workingDirectory = Path.Combine(Path.GetTempPath(), "ffmpegkit-e2e");
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "ffmpegkit-mac-e2e");
         Directory.CreateDirectory(workingDirectory);
 
         SmokeTests.Reporter = message => Console.WriteLine($"    {message}");
@@ -63,8 +55,8 @@ public sealed class AppDelegate : UIApplicationDelegate
             : $"FFMPEGKIT_E2E_DONE FAIL ({failures} failed)");
         Console.Out.Flush();
 
-        // Terminate so the runner's `simctl launch --console-pty` returns instead of hanging
-        // until its timeout. Exiting from an iOS app is otherwise not something to imitate.
+        // Terminate so the runner script returns instead of waiting on a GUI app that never
+        // shows a window.
         Environment.Exit(failures == 0 ? 0 : 1);
     }
 }

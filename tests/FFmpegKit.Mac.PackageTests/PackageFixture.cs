@@ -17,7 +17,7 @@ public static class Packages
     /// <summary>Target frameworks each package must carry a binding assembly for.</summary>
     public static readonly string[] ExpectedTargetFrameworks =
     [
-        "net8.0-ios18.0", "net9.0-ios18.0", "net10.0-ios26.0",
+        "net8.0-macos14.0", "net9.0-macos15.0", "net10.0-macos26.0",
     ];
 
     /// <summary>
@@ -31,7 +31,7 @@ public static class Packages
     ];
 
     /// <summary>
-    /// Identifies the simulator slice of an xcframework from its directory name.
+    /// Identifies a macOS slice of an xcframework from its directory name.
     /// </summary>
     /// <remarks>
     /// Slice names are not asserted literally, because upstream changes them: the device slice
@@ -41,12 +41,8 @@ public static class Packages
     /// FetchXcFrameworks.sh: it cannot be reached from a net*-ios binding but would be embedded
     /// once per target framework, costing ~40% of the package for nothing.
     /// </remarks>
-    public static bool IsSimulatorSlice(string slice) =>
-        slice.Contains("simulator", StringComparison.Ordinal);
-
-    /// <summary>Whether a slice directory name denotes an iOS slice at all.</summary>
-    public static bool IsIosSlice(string slice) =>
-        slice.StartsWith("ios-", StringComparison.Ordinal);
+    public static bool IsMacSlice(string slice) =>
+        slice.StartsWith("macos-", StringComparison.Ordinal);
 
     public static string ArtifactsDirectory { get; } = ResolveArtifactsDirectory();
 
@@ -75,7 +71,7 @@ public static class Packages
     public static string AssemblyName(string variant) => $"FFmpegKit.Net.{variant}.Mac";
 
     /// <summary>
-    /// The binding's native payload for a target framework: the xcframeworks, zipped by the iOS
+    /// The binding's native payload for a target framework: the xcframeworks, zipped by the macOS
     /// SDK into a binding resource package that sits beside the assembly.
     /// </summary>
     public static string ResourcesEntry(string variant, string targetFramework) =>

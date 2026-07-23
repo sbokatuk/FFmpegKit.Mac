@@ -1,0 +1,22 @@
+<Project>
+
+  <!--
+    Imported into consuming apps from build/ and buildTransitive/ in the package.
+
+    The .NET macOS SDK defaults Release builds on CoreCLR to Registrar=managed-static, which
+    fails at runtime for every ObjC class in this binding with
+
+        Could not find the type 'ObjCRuntime.__Registrar__' in the assembly 'FFmpegKit.Net.<Variant>.Mac'
+
+    because the managed static registrar never rewrites the NuGet-delivered binding assembly with
+    the per-assembly lookup type it then expects. partial-static - the precompiled registrar for
+    the platform assembly plus dynamic registration for everything else - handles the binding
+    correctly (verified by tests/FFmpegKit.Mac.HostTests) and is the SDK's own long-standing
+    default for other configurations. Only applied when the app has not chosen a registrar
+    itself: set <Registrar> in the app project to override this.
+  -->
+  <PropertyGroup>
+    <Registrar Condition=" '$(Registrar)' == '' ">partial-static</Registrar>
+  </PropertyGroup>
+
+</Project>

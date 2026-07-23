@@ -15,7 +15,7 @@ public class PackageLayoutTests
     /// carry the same bytes is asserted separately and cheaply by
     /// <see cref="Native_payload_is_identical_across_target_frameworks"/>.
     /// </summary>
-    private const string PayloadTargetFramework = "net8.0-ios18.0";
+    private const string PayloadTargetFramework = "net8.0-macos14.0";
 
     [Theory]
     [MemberData(nameof(Packages.Variants), MemberType = typeof(Packages))]
@@ -43,7 +43,7 @@ public class PackageLayoutTests
             var entry = package.GetEntry(Packages.ResourcesEntry(variant, tfm));
 
             // The payload must be a single .resources.zip rather than a .resources directory.
-            // The iOS SDK emits the directory form unless CompressBindingResourcePackage is set,
+            // The SDK emits the directory form unless CompressBindingResourcePackage is set,
             // which puts ~1000 files at paths long enough to break restore on Windows.
             Assert.True(
                 entry is not null,
@@ -68,6 +68,10 @@ public class PackageLayoutTests
         //
         // Compared by logical content, not bytes: each pass re-zips the payload and the archives
         // embed their own timestamps, so the same frameworks legitimately produce different CRCs.
+        // The SDK-generated 'manifest' entry is excluded too - each TFM's macOS SDK writes its
+        // own schema (net9 added IdentityWithoutPathSeparatorSuffix and
+        // LinkWithSwiftSystemLibraries elements), so it legitimately differs while the actual
+        // native frameworks must not.
         var manifests = new List<(string Tfm, List<(string Name, long Length)> Entries)>();
 
         foreach (var tfm in Packages.ExpectedTargetFrameworks)
@@ -75,6 +79,7 @@ public class PackageLayoutTests
             // Opened and released one at a time - three FullGpl payloads at once would be ~230 MB.
             using var payload = Packages.OpenNativePayload(package, variant, tfm);
             manifests.Add((tfm, payload.Entries
+                .Where(e => e.FullName != "manifest")
                 .Select(e => (e.FullName, e.Length))
                 .OrderBy(e => e.FullName, StringComparer.Ordinal)
                 .ToList()));
@@ -113,7 +118,7 @@ public class PackageLayoutTests
 
     [Theory]
     [MemberData(nameof(Packages.Variants), MemberType = typeof(Packages))]
-    public void Native_payload_carries_ios_slices_only(string variant)
+    public void Native_payload_carries_macos_slices_only(string variant)
     {
         using var package = Packages.OpenPackage(variant);
         using var payload = Packages.OpenNativePayload(package, variant, PayloadTargetFramework);
@@ -122,16 +127,15 @@ public class PackageLayoutTests
         {
             var slices = SlicesOf(payload, framework);
 
-            // Device and simulator, and nothing else. A macos slice creeping back in would inflate
+            // Exactly one macOS slice, and nothing else. An iOS slice creeping back in would inflate
             // the package by ~40% - and FullGpl already sits close to the 250 MB nuget.org limit.
-            // Checked by shape rather than by name: upstream renamed the device slice from
-            // ios-arm64_arm64e to ios-arm64 when it rebuilt 8.1.2.
+            // Checked by shape rather than by name, because upstream renames slices between
+            // rebuilds.
             Assert.All(slices, slice => Assert.True(
-                Packages.IsIosSlice(slice),
-                $"{framework}.xcframework carries a non-iOS slice '{slice}'."));
+                Packages.IsMacSlice(slice),
+                $"{framework}.xcframework carries a non-macOS slice '{slice}'."));
 
-            Assert.Single(slices.Where(Packages.IsSimulatorSlice));
-            Assert.Single(slices.Where(slice => !Packages.IsSimulatorSlice(slice)));
+            Assert.Single(slices);
         }
     }
 
@@ -150,10 +154,10 @@ public class PackageLayoutTests
             using var reader = new StreamReader(manifest!.Open());
             var text = reader.ReadToEnd();
 
-            // Stripping the macos slice means rewriting AvailableLibraries to match. If the
-            // directory is gone but the manifest still advertises it, the iOS SDK rejects the
+            // Stripping the iOS slices means rewriting AvailableLibraries to match. If a
+            // directory is gone but the manifest still advertises it, the SDK rejects the
             // whole xcframework - a failure that would only surface in a consuming app's build.
-            Assert.DoesNotContain("macos", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("ios-", text, StringComparison.OrdinalIgnoreCase);
 
             // Every slice present on disk must be advertised, whatever upstream named it.
             foreach (var slice in SlicesOf(payload, framework))
@@ -176,7 +180,7 @@ public class PackageLayoutTests
         // first place, so its presence is exactly what the package's licence expression claims.
         // Packing a GPL build under an LGPL licence expression is the one packaging mistake here
         // with legal consequences for consumers, and it is otherwise invisible.
-        var deviceSlice = SlicesOf(payload, "libavcodec").Single(s => !Packages.IsSimulatorSlice(s));
+        var deviceSlice = SlicesOf(payload, "libavcodec").Single();
 
         using var libavcodec = Packages.ReadEntry(
             payload,
@@ -227,6 +231,25 @@ public class PackageLayoutTests
 
         Assert.True(package.GetEntry("icon.png") is not null, "icon.png is referenced but not packed.");
         Assert.True(package.GetEntry("README.md") is not null, "README.md is referenced but not packed.");
+    }
+
+    [Theory]
+    [MemberData(nameof(Packages.Variants), MemberType = typeof(Packages))]
+    public void Package_ships_the_registrar_workaround_targets(string variant)
+    {
+        using var package = Packages.OpenPackage(variant);
+
+        // Without this, every Release consumer crashes at runtime with the managed-static
+        // registrar's missing __Registrar__ type - see FFmpegKit.Net.Mac.targets.
+        var id = Packages.PackageId(variant);
+        foreach (var folder in new[] { "build", "buildTransitive" })
+        {
+            var entry = package.GetEntry($"{folder}/{id}.targets");
+            Assert.True(entry is not null, $"{folder}/{id}.targets is not packed.");
+
+            using var reader = new StreamReader(entry!.Open());
+            Assert.Contains("partial-static", reader.ReadToEnd(), StringComparison.Ordinal);
+        }
     }
 
     [Theory]

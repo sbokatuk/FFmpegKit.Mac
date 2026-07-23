@@ -3,27 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>FFmpegKitDeviceTests</string>
+	<string>FFmpegKitHostTests</string>
 	<key>CFBundleDisplayName</key>
-	<string>FFmpegKit Device Tests</string>
+	<string>FFmpegKit Host Tests</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.sbokatuk.ffmpegkit.devicetests</string>
+	<string>com.sbokatuk.ffmpegkit.hosttests</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
-	<key>LSRequiresIPhoneOS</key>
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<!-- No Dock icon or menu bar: this is a headless test host that prints and exits. -->
+	<key>LSUIElement</key>
 	<true/>
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>1</integer>
-		<integer>2</integer>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UILaunchStoryboardName</key>
-	<string></string>
 </dict>
 </plist>
