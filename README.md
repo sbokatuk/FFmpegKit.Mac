@@ -165,19 +165,21 @@ var probe = await FFprobeKit.GetMediaInformationAsync(path);
 Console.WriteLine(probe.MediaInformation?.Format);
 ```
 
-More examples and usage can be found in the [original FFmpegKit wiki](https://github.com/arthenica/ffmpeg-kit/wiki/iOS). That repository is archived, but the Objective-C API it documents is the one these bindings expose, so it remains the reference.
+`Registrar`: the packages ship a small `.targets` that defaults consuming apps to the `partial-static` registrar. The .NET macOS SDK's Release default (`managed-static`) crashes at runtime on NuGet-delivered bindings with a missing `ObjCRuntime.__Registrar__` type; `partial-static` is fully supported and handles the binding correctly. Set `<Registrar>` in your app project yourself to override.
+
+More examples and usage can be found in the [original FFmpegKit wiki](https://github.com/arthenica/ffmpeg-kit/wiki/MacOS). That repository is archived, but the Objective-C API it documents is the one these bindings expose, so it remains the reference.
 
 ## Building
 
 ### Prerequisites
 
-macOS with Xcode, and the .NET 9 and 10 SDKs each with the iOS workload installed — every band supplies a different reference pack. The SDK is chosen by the `global.json` in the *working directory*, so install each band from a directory pinned to it:
+macOS with Xcode, and the .NET 9 and 10 SDKs each with the macOS workload installed — every band supplies a different reference pack. The SDK is chosen by the `global.json` in the *working directory*, so install each band from a directory pinned to it:
 
 ```sh
 for major in 9 10; do
   dir=$(mktemp -d) && cd "$dir"
   dotnet new globaljson --sdk-version "$(dotnet --list-sdks | grep "^${major}\." | tail -1 | cut -d' ' -f1)" --force
-  dotnet workload install ios
+  dotnet workload install macos
 done
 ```
 
@@ -212,9 +214,9 @@ dotnet pack src/FFmpegKit.Mac/FFmpegKit.Mac.csproj \
 Only needed when bumping to a newer native FFmpegKit version. The binding is generated with [Objective Sharpie](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/maui/) from the vendored frameworks' public headers:
 
 ```sh
-# Stage the public headers from the device slice
+# Stage the public headers from the macOS slice
 mkdir -p Headers
-cp -R src/FFmpegKit.Mac/libs/Video/ffmpegkit.xcframework/ios-arm64_arm64e/ffmpegkit.framework/Headers/* Headers/
+cp -R src/FFmpegKit.Mac/libs/Video/ffmpegkit.xcframework/macos-arm64_x86_64/ffmpegkit.framework/Versions/A/Headers/* Headers/
 
 # Sharpie must be pointed at an umbrella header. FFmpegKit.h alone only pulls in a fraction of
 # the API - binding just that is how the previous binding ended up missing FFmpegKitConfig,
@@ -222,14 +224,14 @@ cp -R src/FFmpegKit.Mac/libs/Video/ffmpegkit.xcframework/ios-arm64_arm64e/ffmpeg
 ls Headers/*.h | grep -v fftools | grep -v ffmpegkit_exception \
   | sed 's|Headers/|#import "|; s|$|"|' > Headers/FFmpegKitUmbrella.h
 
-sharpie bind -output Binding -sdk iphoneos26.5 -scope Headers Headers/FFmpegKitUmbrella.h -c -I Headers
+sharpie bind -output Binding -sdk macosx26.5 -scope Headers Headers/FFmpegKitUmbrella.h -c -I Headers
 ```
 
 Then reconcile `Binding/ApiDefinitions.cs` and `Binding/StructsAndEnums.cs` into `src/FFmpegKit.Mac/ApiDefinition.cs` and `src/FFmpegKit.Mac/Structs.cs`. Every `[Verify]` attribute sharpie emits must be reviewed and removed — they intentionally cause build failures. Note that sharpie emits the `Level` enum as `ulong` despite its negative members; it has to be `long`.
 
 ## Tests
 
-**Package tests** run anywhere and inspect the packed `.nupkg` files — assembly present for every target framework, all eight xcframeworks with iOS device and simulator slices only, manifests consistent with the slices actually shipped, the GPL/LGPL split matching what the binaries contain, and nuspec metadata:
+**Package tests** run anywhere and inspect the packed `.nupkg` files — assembly present for every target framework, all eight xcframeworks with exactly one macOS slice each, manifests consistent with the slices actually shipped, the GPL/LGPL split matching what the binaries contain, the registrar workaround `.targets` present, and nuspec metadata:
 
 ```sh
 ./build/BuildNugets.sh                       # produce ./artifacts first
@@ -237,39 +239,23 @@ dotnet test tests/FFmpegKit.Mac.PackageTests
 FFMPEGKIT_VARIANTS=Video dotnet test tests/FFmpegKit.Mac.PackageTests   # ...or just one variant
 ```
 
-**Simulator smoke tests** build an app against the packed package and run real FFmpeg commands on a booted simulator, which is the only way to prove the native frameworks actually link and load:
+**Host smoke tests** build an app against the packed package and run real FFmpeg commands directly on this Mac — macOS is the target platform, so no simulator or device is involved:
 
 ```sh
-./.github/scripts/run-simulator-tests.sh Video 8.1.2 net10.0-ios26.0
+./.github/scripts/run-host-tests.sh Video 8.1.2.1 net9.0-macos15.0
 ```
 
 ## CI
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| [`pr.yml`](.github/workflows/pr.yml) | pull request | Builds and packs all 8 variants as `<version>-beta.<pr>.<run>`, runs package tests and the simulator smoke test, then publishes the betas to nuget.org. Forked PRs build and test but skip publishing, since they cannot read secrets. |
+| [`pr.yml`](.github/workflows/pr.yml) | pull request | Builds and packs all 8 variants as `<version>-beta.<pr>.<run>`, runs package tests and the host smoke tests (net8 and net10 legs in parallel), then publishes the betas to nuget.org. Forked PRs build and test but skip publishing, since they cannot read secrets. |
 | [`release.yml`](.github/workflows/release.yml) | tag `v*` | Same build and tests at the tag's version, publishes to nuget.org, then creates a GitHub release with the changelog since the previous tag and links to every package. |
 
-Both call the reusable [`build.yml`](.github/workflows/build.yml), which runs on macOS — iOS builds have no cross-platform path, unlike the Android bindings.
-
-### Publishing credentials
-
-Publishing uses [nuget.org Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) — no long-lived API key. Each publish job requests a GitHub OIDC token (`id-token: write`), exchanges it via `NuGet/login@v1` for an API key valid for one hour, and pushes with that.
-
-Setup on nuget.org (**Account → Trusted Publishing**): a policy binds to exactly **one** workflow file, so this repository needs **two**, identical apart from the workflow file name:
-
-| Field | Value |
-| --- | --- |
-| Package Owner | `s.bokatuk` |
-| Repository Owner | `sbokatuk` |
-| Repository | `FFmpegKit.Mac` — the name only, not a URL |
-| Workflow File | `pr.yml` for one policy, `release.yml` for the other |
-| Environment | `nuget.org` — must match `environment:` on the publish job |
-
-Set a `NUGET_USER` secret if the nuget.org profile name ever changes.
+Both call the reusable [`build.yml`](.github/workflows/build.yml), which runs on macOS — which is also where the smoke tests execute, since the runner itself is the target platform.
 
 Note that prereleases pushed to nuget.org cannot be deleted, only unlisted — every pull request push publishes eight packages.
 
 ### Package size
 
-The `-gpl` variants are large: `FullGpl` packs to roughly 230 MB against nuget.org's **250 MB** limit, because the native payload is embedded once per target framework. If a future FFmpegKit release grows the binaries enough to cross that line, the options are to drop the (end-of-life) `net8.0-ios` target, or to thin the simulator slice to `arm64` only — which costs iOS Simulator support for anyone still on an Intel Mac.
+The single universal macOS slice keeps packages well clear of nuget.org's **250 MB** limit (`Video` carries ~20 MB of payload per target framework). If a future FFmpegKit release grows the binaries enough to threaten that line, the options are to drop the (end-of-life) `net8.0-macos` target, or to thin the universal slice to `arm64` only — which costs support for Intel Macs.
