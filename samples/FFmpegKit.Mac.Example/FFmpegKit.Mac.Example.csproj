@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A native AppKit sample for the macOS bindings - the counterpart of the MAUI samples in the
+    iOS and Android repositories, which cannot cover this platform: MAUI's "Mac" is Mac Catalyst,
+    and no native FFmpegKit Catalyst slice is published anywhere.
+
+    Deliberately NOT in FFmpegKit.sln: it consumes the packed NuGet from ./artifacts (see below),
+    so a solution restore on a fresh clone would fail before anything was built.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0-macos15.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+
+    <ApplicationId>com.sbokatuk.ffmpegkit.mac.example</ApplicationId>
+    <ApplicationTitle>FFmpegKit.Mac Example</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <!-- 12.0 is the floor the .NET 9 macOS SDK enforces. -->
+    <SupportedOSPlatformVersion>12.0</SupportedOSPlatformVersion>
+
+    <!--
+      Which build of the FFmpegKit package to demo. Defaults to the repository's own version, so
+      it tracks a local `BuildNugets.sh` automatically; pass -p:FFmpegKitVersion=8.1.2.1-beta.4
+      to try a specific build. Resolved from ./artifacts through the local feed in NuGet.config,
+      not from nuget.org, so it always exercises your local build.
+    -->
+    <FFmpegKitVersion Condition=" '$(FFmpegKitVersion)' == '' ">$(VersionPrefix)</FFmpegKitVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Full (LGPL) deliberately - swapping to a -gpl variant would make the sample itself
+      GPL-3.0. See the License section of the README.
+    -->
+    <PackageReference Include="FFmpegKit.Net.Full.Mac" Version="$(FFmpegKitVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The clip the conversions run on, copied into the app bundle's Resources. -->
+    <BundleResource Include="Resources/sample.mp4" />
+  </ItemGroup>
+
+</Project>
