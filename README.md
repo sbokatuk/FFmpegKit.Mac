@@ -2,9 +2,9 @@
 
 [![NuGet](https://img.shields.io/nuget/v/FFmpegKit.Net.Video.Mac?label=nuget)](https://www.nuget.org/packages/FFmpegKit.Net.Video.Mac)
 [![release](https://github.com/sbokatuk/FFmpegKit.Mac/actions/workflows/release.yml/badge.svg)](https://github.com/sbokatuk/FFmpegKit.Mac/actions/workflows/release.yml)
-[![Targets: net8.0 | net9.0 | net10.0](https://img.shields.io/badge/targets-net8.0%20%7C%20net9.0%20%7C%20net10.0-512BD4)](#packages)
+[![Targets: net8.0 | net9.0 | net10.0](https://img.shields.io/badge/targets-net8.0%20%7C%20net9.0%20%7C%20net10.0-512BD4)](#installation)
 [![ffmpeg 8.1.2](https://img.shields.io/badge/ffmpeg-8.1.2-632CA6)](#about)
-[![Licence: MIT AND LGPL-3.0 or GPL-3.0](https://img.shields.io/badge/licence-MIT%20AND%20LGPL--3.0%20or%20GPL--3.0-orange)](#licence)
+[![Licence: MIT AND LGPL-3.0 or GPL-3.0](https://img.shields.io/badge/licence-MIT%20AND%20LGPL--3.0%20or%20GPL--3.0-orange)](#license)
 
 .NET for macOS bindings for the native **FFmpegKit** library.
 
@@ -167,7 +167,36 @@ Console.WriteLine(probe.MediaInformation?.Format);
 
 `Registrar`: the packages ship a small `.targets` that defaults consuming apps to the `partial-static` registrar. The .NET macOS SDK's Release default (`managed-static`) crashes at runtime on NuGet-delivered bindings with a missing `ObjCRuntime.__Registrar__` type; `partial-static` is fully supported and handles the binding correctly. Set `<Registrar>` in your app project yourself to override.
 
+Global log and statistics hooks take lambdas, and are cleared by name:
+
+```c#
+FFmpegKitConfig.EnableLogCallback(log => Console.WriteLine(log.Message));
+FFmpegKitConfig.DisableLogCallback();          // likewise DisableStatisticsCallback()
+```
+
+Both callbacks arrive on an FFmpegKit worker thread — marshal before touching UI — and are
+held by FFmpegKit until cleared, so anything they capture stays alive too.
+
 More examples and usage can be found in the [original FFmpegKit wiki](https://github.com/arthenica/ffmpeg-kit/wiki/MacOS). That repository is archived, but the Objective-C API it documents is the one these bindings expose, so it remains the reference.
+
+### Signing, hardened runtime and notarization
+
+The packages ship unsigned FFmpegKit `.framework`s. The .NET macOS SDK embeds them under
+`Contents/Frameworks` and signs each nested framework with the app's own identity as part of
+signing the app, so there is nothing FFmpegKit-specific to configure:
+
+- **Local and ad-hoc builds** run as-is — the default ad-hoc signature covers the embedded
+  frameworks.
+- **Hardened runtime + library validation** (what notarization requires): frameworks signed as
+  part of the app bundle share its Team ID and pass library validation. Do not re-sign them
+  with a different identity afterwards, and `com.apple.security.cs.disable-library-validation`
+  is not needed for these frameworks.
+- **Custom signing scripts**: sign inside-out — nested frameworks first, the app bundle last.
+  Re-signing the outer bundle alone invalidates the nested seals and the app dies at load with
+  a code-signature error.
+- **Sandboxed / App Store builds**: FFmpeg reads and writes ordinary file paths, so the usual
+  user-selected-file entitlements govern what commands can touch; the `Https*` variants only
+  need `com.apple.security.network.client` if your commands actually fetch remote inputs.
 
 ## Building
 
@@ -211,7 +240,7 @@ dotnet pack src/FFmpegKit.Mac/FFmpegKit.Mac.csproj \
 
 ### Regenerating the binding
 
-Only needed when bumping to a newer native FFmpegKit version. The binding is generated with [Objective Sharpie](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/maui/) from the vendored frameworks' public headers:
+Only needed when bumping to a newer native FFmpegKit version. The binding is generated with [Objective Sharpie](https://learn.microsoft.com/en-us/previous-versions/xamarin/cross-platform/macios/binding/objective-sharpie/) from the vendored frameworks' public headers:
 
 ```sh
 # Stage the public headers from the macOS slice

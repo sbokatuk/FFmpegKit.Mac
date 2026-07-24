@@ -109,8 +109,10 @@ public sealed class AppDelegate : NSApplicationDelegate
             }
             else
             {
+                // A failed command explains itself in Output; its last line is FFmpeg's own
+                // error message.
                 var cancelled = session.ReturnCode?.IsValueCancel == true;
-                _status.StringValue = cancelled ? $"{name}: cancelled" : $"{name}: failed";
+                _status.StringValue = cancelled ? $"{name}: cancelled" : $"{name}: failed - {LastLine(session.Output)}";
             }
         }
         finally
@@ -125,6 +127,11 @@ public sealed class AppDelegate : NSApplicationDelegate
         FFmpeg.Cancel();
         _status.StringValue = "cancelling…";
     }
+
+    private static string LastLine(string? output) =>
+        output?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) is { Length: > 0 } lines
+            ? lines[^1]
+            : "(no output captured)";
 
     private void SetBusy(bool busy)
     {
@@ -145,8 +152,10 @@ public sealed class AppDelegate : NSApplicationDelegate
 
         _actions =
         [
-            Button("Resize 320x240", () => RunAsync("resize", "-vf scale=320:240 -c:v libx264 -preset veryfast -an", "mp4")),
-            Button("Grayscale", () => RunAsync("grayscale", "-vf format=gray -c:v libx264 -preset veryfast -an", "mp4")),
+            // mpeg4, not libx264: this sample references the Full (LGPL) variant, and x264 only
+            // exists in the -Gpl packages - requesting it here fails with "Unknown encoder".
+            Button("Resize 320x240", () => RunAsync("resize", "-vf scale=320:240 -c:v mpeg4 -an", "mp4")),
+            Button("Grayscale", () => RunAsync("grayscale", "-vf format=gray -c:v mpeg4 -an", "mp4")),
             Button("Extract audio", () => RunAsync("audio", "-vn -acodec aac", "m4a")),
         ];
 

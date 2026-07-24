@@ -1,11 +1,11 @@
 name: Select Xcode
 description: >
-  Selects the Xcode carrying the iOS SDK the net10 target framework is built against, and
+  Selects the Xcode carrying the macOS SDK the net10 target framework is built against, and
   verifies it can resolve host tools before anything depends on it.
 
 inputs:
-  ios-sdk-version:
-    description: iOS SDK line the selected Xcode must carry.
+  sdk-version:
+    description: SDK line (Xcode version line) the selected Xcode must carry.
     required: false
     default: '26.0'
 
@@ -16,16 +16,17 @@ runs:
       run: |
         set -uo pipefail
 
-        # The packages advertise net10.0-ios26.0, and .NET for iOS only builds that target
-        # framework against an Xcode carrying the matching iOS SDK:
+        # The packages advertise net10.0-macos26.0, and .NET for macOS only builds that target
+        # framework against an Xcode carrying the matching macOS SDK - the same
         #
-        #     error : This version of .NET for iOS (26.0.11017) requires Xcode 26.0.
-        #             The current version of Xcode is 26.5.
+        #     error : This version of .NET for macOS (...) requires Xcode 26.0.
         #
-        # so the selection is confined to the 26.0 line rather than "any 26.x". The runner image
-        # default is older still (16.4), so one has to be chosen explicitly either way.
+        # coupling .NET for iOS has, so the selection is confined to the 26.0 line rather than
+        # "any 26.x". The runner image default is older still (16.4), so one has to be chosen
+        # explicitly either way.
         #
-        # Two traps here, both of which have already broken this pipeline:
+        # Two traps here, both inherited from the sibling FFmpegKit.iOS pipeline where they
+        # broke builds:
         #
         #  1. `xcode-select -s` does not validate its argument. Pointing it at a path that does
         #     not exist succeeds silently, and the failure only appears later as
@@ -34,18 +35,17 @@ runs:
         #     shell out to xcrun.
         #
         #  2. /Applications/Xcode_26.0.app on the macos-15-arm64 image reports itself as Xcode
-        #     26.0.1 and carries the iOS 26 SDK, but its macOS platform is incomplete - the
-        #     unversioned MacOSX.sdk the iOS SDK resolves host tools through is missing, so every
+        #     26.0.1 but its macOS platform is incomplete - the unversioned MacOSX.sdk that host
+        #     tools resolve through is missing, so every
         #     `xcodebuild -sdk <...>/MacOSX.sdk -find install_name_tool` fails. The image also
         #     ships a separate, complete /Applications/Xcode_26.0.1.app.
         #
-        #     Hence newest patch first: 26.0.1 beats the broken 26.0 alias, matching what the
-        #     AntMedia.Net repository settled on for the same runners. Candidates are still
+        #     Hence newest patch first: 26.0.1 beats the broken 26.0 alias. Candidates are still
         #     probed, so a bad bundle is skipped rather than selected and discovered mid-build.
-        ios_sdk_version='${{ inputs.ios-sdk-version }}'
+        sdk_version='${{ inputs.sdk-version }}'
         selected=""
 
-        for app in $(ls -d "/Applications/Xcode_${ios_sdk_version}"*.app 2>/dev/null | sort -Vr); do
+        for app in $(ls -d "/Applications/Xcode_${sdk_version}"*.app 2>/dev/null | sort -Vr); do
           developer="${app}/Contents/Developer"
           [ -d "${developer}" ] || continue
           name="$(basename "${app}")"
@@ -78,7 +78,7 @@ runs:
         done
 
         if [ -z "${selected}" ]; then
-          echo "::error::no usable Xcode carrying the iOS ${ios_sdk_version} SDK is installed on this runner"
+          echo "::error::no usable Xcode carrying the macOS ${sdk_version} SDK is installed on this runner"
           for app in $(ls -d /Applications/Xcode*.app 2>/dev/null); do
             echo "--- ${app}"
             echo "  iOS SDKs:   $(ls "${app}/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs" 2>/dev/null | tr '\n' ' ')"

@@ -251,9 +251,7 @@ public static class SmokeTests
         }
         finally
         {
-            // Clearing the callback is what the native API expects a null here to mean; the
-            // binding just does not model the parameter as nullable.
-            FFmpegKitConfig.EnableLogCallback(null!);
+            FFmpegKitConfig.DisableLogCallback();
         }
 
         Assert(Volatile.Read(ref lines) > 0, "The log delegate never fired.");
@@ -291,7 +289,7 @@ public static class SmokeTests
         }
         finally
         {
-            FFmpegKitConfig.EnableStatisticsCallback(null!);
+            FFmpegKitConfig.DisableStatisticsCallback();
         }
 
         Assert(Volatile.Read(ref updates) > 0, "The statistics delegate never fired.");

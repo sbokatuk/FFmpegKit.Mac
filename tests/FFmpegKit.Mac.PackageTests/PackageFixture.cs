@@ -34,12 +34,13 @@ public static class Packages
     /// Identifies a macOS slice of an xcframework from its directory name.
     /// </summary>
     /// <remarks>
-    /// Slice names are not asserted literally, because upstream changes them: the device slice
-    /// was <c>ios-arm64_arm64e</c> until 8.1.2 was rebuilt as plain <c>ios-arm64</c>. What has to
-    /// hold is structural - one device slice, one simulator slice, both iOS, no macOS - so that
-    /// is what the tests check. The macOS slice upstream also ships is stripped by
-    /// FetchXcFrameworks.sh: it cannot be reached from a net*-ios binding but would be embedded
-    /// once per target framework, costing ~40% of the package for nothing.
+    /// Slice names are not asserted literally, because upstream changes them between builds
+    /// (the universal slice has appeared both as <c>macos-arm64_x86_64</c> and with the
+    /// architectures reordered). What has to hold is structural - exactly one macOS slice per
+    /// xcframework, no iOS ones - so that is what the tests check. The iOS slices upstream also
+    /// ships are stripped by FetchXcFrameworks.sh: they cannot be reached from a net*-macos
+    /// binding but would be embedded once per target framework, bloating the package for
+    /// nothing.
     /// </remarks>
     public static bool IsMacSlice(string slice) =>
         slice.StartsWith("macos-", StringComparison.Ordinal);
