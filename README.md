@@ -169,6 +169,25 @@ Console.WriteLine(probe.MediaInformation?.Format);
 
 More examples and usage can be found in the [original FFmpegKit wiki](https://github.com/arthenica/ffmpeg-kit/wiki/MacOS). That repository is archived, but the Objective-C API it documents is the one these bindings expose, so it remains the reference.
 
+### Signing, hardened runtime and notarization
+
+The packages ship unsigned FFmpegKit `.framework`s. The .NET macOS SDK embeds them under
+`Contents/Frameworks` and signs each nested framework with the app's own identity as part of
+signing the app, so there is nothing FFmpegKit-specific to configure:
+
+- **Local and ad-hoc builds** run as-is — the default ad-hoc signature covers the embedded
+  frameworks.
+- **Hardened runtime + library validation** (what notarization requires): frameworks signed as
+  part of the app bundle share its Team ID and pass library validation. Do not re-sign them
+  with a different identity afterwards, and `com.apple.security.cs.disable-library-validation`
+  is not needed for these frameworks.
+- **Custom signing scripts**: sign inside-out — nested frameworks first, the app bundle last.
+  Re-signing the outer bundle alone invalidates the nested seals and the app dies at load with
+  a code-signature error.
+- **Sandboxed / App Store builds**: FFmpeg reads and writes ordinary file paths, so the usual
+  user-selected-file entitlements govern what commands can touch; the `Https*` variants only
+  need `com.apple.security.network.client` if your commands actually fetch remote inputs.
+
 ## Building
 
 ### Prerequisites
@@ -211,7 +230,7 @@ dotnet pack src/FFmpegKit.Mac/FFmpegKit.Mac.csproj \
 
 ### Regenerating the binding
 
-Only needed when bumping to a newer native FFmpegKit version. The binding is generated with [Objective Sharpie](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/maui/) from the vendored frameworks' public headers:
+Only needed when bumping to a newer native FFmpegKit version. The binding is generated with [Objective Sharpie](https://learn.microsoft.com/en-us/previous-versions/xamarin/cross-platform/macios/binding/objective-sharpie/) from the vendored frameworks' public headers:
 
 ```sh
 # Stage the public headers from the macOS slice

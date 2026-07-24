@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Merge target-framework assets from one set of NuGet packages into another.
 
-No single .NET SDK can build net8.0-ios, net9.0-ios and net10.0-ios together: each SDK's iOS
-workload supports only the current TFM and the previous one. The packages are therefore built in
-two passes (see BuildNugets.sh) and merged here into one package per variant.
+No single .NET SDK can build net8.0-macos, net9.0-macos and net10.0-macos together: each SDK's
+macOS workload supports only the current TFM and the previous one. The packages are therefore
+built in two passes (see BuildNugets.sh) and merged here into one package per variant.
 
 For every package in PRIMARY, any lib/<tfm>/ tree that exists in the matching ADDITIONAL package
 but not in PRIMARY is copied across, and a dependency group is added to the nuspec so NuGet
