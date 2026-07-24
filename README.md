@@ -167,6 +167,16 @@ Console.WriteLine(probe.MediaInformation?.Format);
 
 `Registrar`: the packages ship a small `.targets` that defaults consuming apps to the `partial-static` registrar. The .NET macOS SDK's Release default (`managed-static`) crashes at runtime on NuGet-delivered bindings with a missing `ObjCRuntime.__Registrar__` type; `partial-static` is fully supported and handles the binding correctly. Set `<Registrar>` in your app project yourself to override.
 
+Global log and statistics hooks take lambdas, and are cleared by name:
+
+```c#
+FFmpegKitConfig.EnableLogCallback(log => Console.WriteLine(log.Message));
+FFmpegKitConfig.DisableLogCallback();          // likewise DisableStatisticsCallback()
+```
+
+Both callbacks arrive on an FFmpegKit worker thread — marshal before touching UI — and are
+held by FFmpegKit until cleared, so anything they capture stays alive too.
+
 More examples and usage can be found in the [original FFmpegKit wiki](https://github.com/arthenica/ffmpeg-kit/wiki/MacOS). That repository is archived, but the Objective-C API it documents is the one these bindings expose, so it remains the reference.
 
 ### Signing, hardened runtime and notarization
