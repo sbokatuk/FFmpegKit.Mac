@@ -130,11 +130,27 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  sample:
-    name: build sample app
-    timeout-minutes: 20
+  build-samples:
+    name: sample build (${{ matrix.tfm }})
+    # Release macOS AOT statically links the native FFmpeg frameworks, so it is slower than the
+    # old Debug check; the two legs run concurrently, so wall-clock is one leg.
+    timeout-minutes: 60
     needs: pack
     runs-on: macos-15
+    strategy:
+      # fail-fast off: the net8 and net10 legs fail for opposite reasons, so a red net10 next to a
+      # green net8 already localises the cause.
+      fail-fast: false
+      matrix:
+        # The net8 and net10 extremes of what the binding ships, each on its own SDK band. The
+        # sample restores the packed package through a PackageReference exactly as a consumer
+        # would and links under the Release AOT toolchain, where a binding that restores fine in
+        # Debug can still fail. It is what catches an API that no longer matches the README.
+        include:
+          - band: net8
+            tfm: net8.0-macos14.0
+          - band: net10
+            tfm: net10.0-macos26.0
     steps:
       - uses: actions/checkout@v4
 
@@ -144,10 +160,23 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
 
-      - name: Install macOS workload
-        run: dotnet workload install macos
+      - name: Install the macOS workload for the ${{ matrix.band }} band
+        run: |
+          # The sample targets exactly one framework per band (SampleSdkBand), so a single band's
+          # workload is enough. Pinned through a scratch global.json because .NET for macOS
+          # couples the target framework to the SDK band that carries the matching workload.
+          major="$(printf '%s' '${{ matrix.band }}' | sed 's/net//')"
+          sdk="$(dotnet --list-sdks | grep "^${major}\." | tail -1 | cut -d' ' -f1)"
+          dir="${RUNNER_TEMP}/workload-${{ matrix.band }}"
+          mkdir -p "${dir}"
+          ( cd "${dir}" \
+            && dotnet new globaljson --sdk-version "${sdk}" --force \
+            && dotnet workload install macos )
 
       - name: Download packages
         uses: actions/download-artifact@v4
@@ -155,14 +184,20 @@ jobs:
           name: nuget-packages
           path: artifacts
 
-      # The sample consumes the packed package exactly as a user would, so it is what catches an
-      # API that no longer matches what the README documents. Debug, because this is a compile
-      # check and nothing here is shipped.
-      - name: Build the sample against the packed package
+      - name: Build the ${{ matrix.tfm }} sample against the packed package
         run: |
-          dotnet build samples/FFmpegKit.Mac.Example/FFmpegKit.Mac.Example.csproj \
-            --configuration Debug \
-            -p:FFmpegKitVersion="${{ inputs.version }}"
+          # Built on the band's own SDK: the repository global.json pins .NET 9, so a scratch
+          # global.json in the invocation directory selects the band that owns this framework.
+          # Release, so the AOT/registrar path is exercised.
+          major="$(printf '%s' '${{ matrix.band }}' | sed 's/net//')"
+          sdk="$(dotnet --list-sdks | grep "^${major}\." | tail -1 | cut -d' ' -f1)"
+          dir="${RUNNER_TEMP}/build-${{ matrix.band }}"
+          mkdir -p "${dir}"
+          printf '{ "sdk": { "version": "%s", "rollForward": "latestFeature" } }\n' "${sdk}" > "${dir}/global.json"
+          ( cd "${dir}" && dotnet build "${GITHUB_WORKSPACE}/samples/FFmpegKit.Mac.Example/FFmpegKit.Mac.Example.csproj" \
+              --configuration Release -f "${{ matrix.tfm }}" \
+              -p:SampleSdkBand="${{ matrix.band }}" \
+              -p:FFmpegKitVersion="${{ inputs.version }}" )
 
   e2e:
     name: host smoke test (${{ matrix.target-framework }})

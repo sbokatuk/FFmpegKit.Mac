@@ -193,12 +193,15 @@ public sealed class AppDelegate : NSApplicationDelegate
 
         _window.Center();
         _window.MakeKeyAndOrderFront(null);
-        NSApplication.SharedApplication.ActivateIgnoringOtherApps(true);
+
+        // Activate() replaced ActivateIgnoringOtherApps(bool) in macOS 14; the sample's floor is
+        // 12.0, so call whichever the running OS supports rather than eat a CA1422 deprecation.
+        if (OperatingSystem.IsMacOSVersionAtLeast(14))
+            NSApplication.SharedApplication.Activate();
+        else
+            NSApplication.SharedApplication.ActivateIgnoringOtherApps(true);
     }
 
     private NSButton Button(string title, Func<Task> action) =>
         NSButton.CreateButton(title, () => _ = action());
-
-    private void InvokeOnMainThread(Action action) =>
-        NSApplication.SharedApplication.InvokeOnMainThread(action);
 }

@@ -9,7 +9,16 @@
     so a solution restore on a fresh clone would fail before anything was built.
   -->
   <PropertyGroup>
-    <TargetFramework>net9.0-macos15.0</TargetFramework>
+    <!--
+      One target framework per SDK band, selected by SampleSdkBand, so the CI sample matrix can
+      build the net8 and net10 extremes each on its own band. Unset locally it is the net9 dev
+      band, so `dotnet build` just works. The macOS platform version is pinned per band to match
+      the package's lib/ folders.
+    -->
+    <SampleSdkBand Condition=" '$(SampleSdkBand)' == '' ">net9</SampleSdkBand>
+    <TargetFrameworks Condition=" '$(SampleSdkBand)' == 'net8' ">net8.0-macos14.0</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(SampleSdkBand)' == 'net9' ">net9.0-macos15.0</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(SampleSdkBand)' == 'net10' ">net10.0-macos26.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
